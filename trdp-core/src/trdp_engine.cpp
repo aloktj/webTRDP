@@ -9,9 +9,9 @@
 
 namespace {
 
-void pdCallback(void *pRefCon, TRDP_APP_SESSION_T appHandle, const TRDP_PD_INFO_T *pMsg, UINT8 *pData, UINT32 dataSize) {
-    if (pRefCon != nullptr) {
-        static_cast<trdp::TrdpEngine *>(pRefCon)->onPdReceive(pMsg, pData, dataSize);
+void pdCallback(void *pUserRef, TRDP_APP_SESSION_T appHandle, const TRDP_PD_INFO_T *pMsg, UINT8 *pData, UINT32 dataSize) {
+    if (pUserRef != nullptr) {
+        static_cast<trdp::TrdpEngine *>(pUserRef)->onPdReceive(appHandle, pMsg, pData, dataSize);
     }
 }
 
@@ -168,7 +168,47 @@ void TrdpEngine::pdSchedulerLoop() {
     }
 }
 
-void TrdpEngine::onPdReceive(const TRDP_PD_INFO_T *, const uint8_t *, uint32_t) {}
+void TrdpEngine::onPdReceive(TRDP_APP_SESSION_T appHandle, const TRDP_PD_INFO_T *pMsg, const uint8_t *pData, uint32_t dataSize) {
+    if (pMsg == nullptr) {
+        return;
+    }
+
+    InterfaceRuntime *iface = nullptr;
+    for (auto &candidate : interfaces_) {
+        if (candidate.appHandle == appHandle) {
+            iface = &candidate;
+            break;
+        }
+    }
+
+    if (iface == nullptr) {
+        return;
+    }
+
+    PdRuntime *runtime = findPdRuntime(pMsg->comId, iface->def.name);
+    if (runtime == nullptr) {
+        return;
+    }
+
+    const auto now = std::chrono::steady_clock::now();
+
+    std::lock_guard<std::mutex> lock(state_mtx_);
+
+    runtime->last_rx_payload.assign(pData, pData + dataSize);
+
+    if (runtime->last_rx_valid) {
+        runtime->last_period_us = std::chrono::duration_cast<std::chrono::duration<double, std::micro>>(now - runtime->last_rx_time).count();
+        const auto new_count = runtime->rx_count + 1u;
+        runtime->avg_period_us += (runtime->last_period_us - runtime->avg_period_us) / static_cast<double>(new_count);
+    } else {
+        runtime->last_period_us = 0.0;
+        runtime->avg_period_us = runtime->last_period_us;
+    }
+
+    runtime->last_rx_time = now;
+    runtime->last_rx_valid = true;
+    runtime->rx_count++;
+}
 
 void TrdpEngine::sendPdOnInterface(InterfaceRuntime &iface, PdRuntime &pd_runtime) {
     // TODO: Integrate TRDP PD send API
