@@ -20,3 +20,8 @@ add_executable(trdp_api_reference
 target_compile_features(trdp_api_reference PRIVATE c_std_99)
 
 target_link_libraries(trdp_api_reference PRIVATE TRDP::trdpap)
+
+include(CTest)
+if(BUILD_TESTING)
+    add_test(NAME trdp_api_reference COMMAND trdp_api_reference)
+endif()
