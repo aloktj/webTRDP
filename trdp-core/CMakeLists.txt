@@ -1,5 +1,6 @@
 add_library(trdp-core STATIC
     src/core.cpp
+    src/trdp_config_loader.cpp
 )
 
 set(TRDP_LIB_PATH "" CACHE PATH "Path to the directory containing libtrdp.a")
