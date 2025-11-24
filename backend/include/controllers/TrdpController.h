@@ -1,7 +1,8 @@
 #pragma once
 
 #include <drogon/HttpController.h>
-#include <trdp/core.hpp>
+
+#include "trdp_engine.hpp"
 
 class TrdpController : public drogon::HttpController<TrdpController> {
 public:

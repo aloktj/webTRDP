@@ -1,11 +1,16 @@
 #include <drogon/drogon.h>
-#include <trdp/core.hpp>
+#include <memory>
+
+#include "trdp_engine.hpp"
 
 #include "controllers/TrdpController.h"
 
+std::unique_ptr<trdp::TrdpEngine> g_trdpEngine;
+
 int main() {
-    trdp::TrdpEngine engine;
-    engine.loadConfig("configs/example.xml", "localhost");
+    g_trdpEngine = std::make_unique<trdp::TrdpEngine>();
+    g_trdpEngine->loadConfig("configs/example.xml", "localhost");
+    g_trdpEngine->start();
 
     drogon::app()
         .addListener("0.0.0.0", 8080)
@@ -13,13 +18,12 @@ int main() {
         .setLogPath("./logs")
         .enableRunAsDaemon(false);
 
-    TrdpController::setEngine(&engine);
+    TrdpController::setEngine(g_trdpEngine.get());
 
-    LOG_INFO << "Starting TRDP backend (status: " << engine.status() << ")";
-    engine.start();
+    LOG_INFO << "Starting TRDP backend";
 
     drogon::app().run();
-    engine.stop();
+    g_trdpEngine->stop();
     return 0;
 }
 

@@ -1,5 +1,5 @@
 add_library(trdp-core STATIC
-    src/core.cpp
+    src/trdp_engine.cpp
     src/trdp_config_loader.cpp
 )
 

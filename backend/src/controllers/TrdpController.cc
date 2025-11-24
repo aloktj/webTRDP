@@ -2,7 +2,8 @@
 
 #include <drogon/HttpResponse.h>
 #include <json/json.h>
-#include <ctime>
+#include <chrono>
+#include <string>
 
 trdp::TrdpEngine *TrdpController::engine_ = nullptr;
 
@@ -10,15 +11,66 @@ void TrdpController::setEngine(trdp::TrdpEngine *engine) {
     engine_ = engine;
 }
 
+namespace {
+
+std::string directionToString(trdp::Direction direction) {
+    switch (direction) {
+    case trdp::Direction::Source:
+        return "source";
+    case trdp::Direction::Sink:
+        return "sink";
+    case trdp::Direction::SourceSink:
+        return "source_sink";
+    }
+    return "unknown";
+}
+
+Json::Int64 toMicros(const std::chrono::steady_clock::time_point &tp) {
+    return std::chrono::duration_cast<std::chrono::microseconds>(tp.time_since_epoch()).count();
+}
+
+}  // namespace
+
 void TrdpController::getPdTelegrams(
     const drogon::HttpRequestPtr &req,
     std::function<void(const drogon::HttpResponsePtr &)> &&callback) const {
+    if (engine_ == nullptr) {
+        auto resp = drogon::HttpResponse::newHttpResponse();
+        resp->setStatusCode(drogon::k500InternalServerError);
+        resp->setBody(R"({"error":"TRDP engine is not initialized"})");
+        resp->setContentTypeCode(drogon::CT_APPLICATION_JSON);
+        callback(resp);
+        return;
+    }
+
     Json::Value telegrams(Json::arrayValue);
-    Json::Value sample;
-    sample["id"] = "dummy";
-    sample["timestamp"] = static_cast<Json::UInt64>(std::time(nullptr));
-    sample["status"] = "snapshot";
-    telegrams.append(sample);
+    const auto snapshot = engine_->getPdSnapshot();
+    for (const auto &pd : snapshot) {
+        Json::Value entry(Json::objectValue);
+
+        if (pd.def != nullptr) {
+            entry["name"] = pd.def->name;
+            entry["com_id"] = pd.def->com_id;
+            entry["dataset_id"] = pd.def->dataset_id;
+            entry["direction"] = directionToString(pd.def->direction);
+            entry["cycle_us"] = pd.def->cycle_us;
+            entry["interface"] = pd.def->interface_name;
+        }
+
+        entry["tx_enabled"] = pd.tx_enabled;
+        entry["next_tx_due_us"] = toMicros(pd.next_tx_due);
+        entry["tx_payload_size"] = static_cast<Json::UInt64>(pd.tx_payload.size());
+        entry["last_rx_payload_size"] = static_cast<Json::UInt64>(pd.last_rx_payload.size());
+        entry["last_rx_time_us"] = toMicros(pd.last_rx_time);
+        entry["last_rx_valid"] = pd.last_rx_valid;
+        entry["rx_count"] = static_cast<Json::UInt64>(pd.rx_count);
+        entry["tx_count"] = static_cast<Json::UInt64>(pd.tx_count);
+        entry["timeout_count"] = static_cast<Json::UInt64>(pd.timeout_count);
+        entry["last_period_us"] = pd.last_period_us;
+        entry["avg_period_us"] = pd.avg_period_us;
+
+        telegrams.append(entry);
+    }
 
     auto resp = drogon::HttpResponse::newHttpJsonResponse(telegrams);
     callback(resp);
