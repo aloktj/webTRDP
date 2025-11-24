@@ -117,10 +117,21 @@ void TrdpEngine::loadConfig(const std::string &xml_path, const std::string &host
 
 void TrdpEngine::start() {
     running_ = true;
+    pd_thread_ = std::thread(&TrdpEngine::pdSchedulerLoop, this);
 }
 
 void TrdpEngine::stop() {
     running_ = false;
+
+    if (pd_thread_.joinable()) {
+        pd_thread_.join();
+    }
+
+    for (auto &iface : interfaces_) {
+        tlc_closeSession(iface.appHandle);
+    }
+
+    tlc_terminate();
 }
 
 std::vector<PdRuntime> TrdpEngine::getPdSnapshot() const { return pd_runtimes_; }
@@ -133,9 +144,37 @@ void TrdpEngine::enablePd(uint32_t com_id, bool enable) {
 
 void TrdpEngine::setPdValues(uint32_t, const std::map<std::string, double> &) {}
 
-void TrdpEngine::pdSchedulerLoop() {}
+void TrdpEngine::pdSchedulerLoop() {
+    while (running_) {
+        const auto now = std::chrono::steady_clock::now();
+
+        std::lock_guard<std::mutex> lock(state_mtx_);
+        for (auto &runtime : pd_runtimes_) {
+            if (!runtime.tx_enabled || runtime.def == nullptr || runtime.def->direction == Direction::Sink) {
+                continue;
+            }
+
+            if (now >= runtime.next_tx_due) {
+                if (InterfaceRuntime *iface = findInterface(runtime.def->interface_name)) {
+                    sendPdOnInterface(*iface, runtime);
+                    runtime.tx_count++;
+                }
+
+                runtime.next_tx_due = now + std::chrono::microseconds(runtime.def->cycle_us);
+            }
+        }
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(1u));
+    }
+}
 
 void TrdpEngine::onPdReceive(const TRDP_PD_INFO_T *, const uint8_t *, uint32_t) {}
+
+void TrdpEngine::sendPdOnInterface(InterfaceRuntime &iface, PdRuntime &pd_runtime) {
+    // TODO: Integrate TRDP PD send API
+    (void)iface;
+    (void)pd_runtime;
+}
 
 InterfaceRuntime *TrdpEngine::findInterface(const std::string &name) {
     for (auto &iface : interfaces_) {
