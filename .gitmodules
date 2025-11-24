@@ -4,3 +4,15 @@
 [submodule "third_party/drogon"]
 	path = third_party/drogon
 	url = git@github.com:aloktj/drogon.git
+[submodule "third_party/json"]
+	path = third_party/json
+	url = git@github.com:aloktj/json.git
+[submodule "third_party/fmt"]
+	path = third_party/fmt
+	url = git@github.com:aloktj/fmt.git
+[submodule "third_party/spdlog"]
+	path = third_party/spdlog
+	url = git@github.com:aloktj/spdlog.git
+[submodule "third_party/googletest"]
+	path = third_party/googletest
+	url = git@github.com:aloktj/googletest.git

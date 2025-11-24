@@ -19,6 +19,12 @@ set(BUILD_EXAMPLES OFF CACHE BOOL "Disable upstream Drogon example builds" FORCE
 set(BUILD_CTL OFF CACHE BOOL "Disable upstream drogon_ctl build" FORCE)
 add_subdirectory(third_party/drogon)
 
+add_subdirectory(third_party/json)
+add_subdirectory(third_party/fmt)
+add_subdirectory(third_party/spdlog)
+add_subdirectory(third_party/googletest)
+
+
 # Re-enable testing for this project after trimming upstream builds.
 set(BUILD_TESTING ON CACHE BOOL "Build tests" FORCE)
 
