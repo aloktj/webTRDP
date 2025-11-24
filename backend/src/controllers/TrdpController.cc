@@ -1,8 +1,9 @@
 #include "controllers/TrdpController.h"
 
+#include <chrono>
 #include <drogon/HttpResponse.h>
 #include <json/json.h>
-#include <chrono>
+#include <map>
 #include <string>
 
 trdp::TrdpEngine *TrdpController::engine_ = nullptr;
@@ -106,6 +107,84 @@ void TrdpController::loadConfig(
     response["status"] = "config loaded";
     response["path"] = path;
     response["host_name"] = hostName;
+
+    auto resp = drogon::HttpResponse::newHttpJsonResponse(response);
+    callback(resp);
+}
+
+void TrdpController::enablePd(
+    const drogon::HttpRequestPtr &req,
+    std::function<void(const drogon::HttpResponsePtr &)> &&callback,
+    uint32_t com_id) const {
+    const auto json = req->getJsonObject();
+    if (!json || !(*json).isMember("enable")) {
+        auto resp = drogon::HttpResponse::newHttpResponse();
+        resp->setStatusCode(drogon::k400BadRequest);
+        resp->setBody(R"({"error":"Missing required field: enable"})");
+        resp->setContentTypeCode(drogon::CT_APPLICATION_JSON);
+        callback(resp);
+        return;
+    }
+
+    if (engine_ == nullptr) {
+        auto resp = drogon::HttpResponse::newHttpResponse();
+        resp->setStatusCode(drogon::k500InternalServerError);
+        resp->setBody(R"({"error":"TRDP engine is not initialized"})");
+        resp->setContentTypeCode(drogon::CT_APPLICATION_JSON);
+        callback(resp);
+        return;
+    }
+
+    const bool enable = (*json)["enable"].asBool();
+    engine_->enablePd(com_id, enable);
+
+    Json::Value response;
+    response["status"] = "pd enable updated";
+    response["com_id"] = com_id;
+    response["enabled"] = enable;
+
+    auto resp = drogon::HttpResponse::newHttpJsonResponse(response);
+    callback(resp);
+}
+
+void TrdpController::setPdValues(
+    const drogon::HttpRequestPtr &req,
+    std::function<void(const drogon::HttpResponsePtr &)> &&callback,
+    uint32_t com_id) const {
+    const auto json = req->getJsonObject();
+    if (!json || !(*json).isMember("fields") || !(*json)["fields"].isArray()) {
+        auto resp = drogon::HttpResponse::newHttpResponse();
+        resp->setStatusCode(drogon::k400BadRequest);
+        resp->setBody(R"({"error":"Missing required field: fields (array)"})");
+        resp->setContentTypeCode(drogon::CT_APPLICATION_JSON);
+        callback(resp);
+        return;
+    }
+
+    if (engine_ == nullptr) {
+        auto resp = drogon::HttpResponse::newHttpResponse();
+        resp->setStatusCode(drogon::k500InternalServerError);
+        resp->setBody(R"({"error":"TRDP engine is not initialized"})");
+        resp->setContentTypeCode(drogon::CT_APPLICATION_JSON);
+        callback(resp);
+        return;
+    }
+
+    std::map<std::string, double> values;
+    for (const auto &field : (*json)["fields"]) {
+        if (!field.isMember("name") || !field.isMember("value") || !field["value"].isNumeric()) {
+            continue;
+        }
+
+        values[field["name"].asString()] = field["value"].asDouble();
+    }
+
+    engine_->setPdValues(com_id, values);
+
+    Json::Value response;
+    response["status"] = "pd values updated";
+    response["com_id"] = com_id;
+    response["updated_fields"] = static_cast<Json::UInt64>(values.size());
 
     auto resp = drogon::HttpResponse::newHttpJsonResponse(response);
     callback(resp);
