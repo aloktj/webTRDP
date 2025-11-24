@@ -55,7 +55,7 @@ private:
     mutable std::mutex state_mtx_;
 
     void pdSchedulerLoop();
-    void onPdReceive(const TRDP_PD_INFO_T *, const uint8_t *, uint32_t);
+    void onPdReceive(TRDP_APP_SESSION_T, const TRDP_PD_INFO_T *, const uint8_t *, uint32_t);
     InterfaceRuntime *findInterface(const std::string &name);
     PdRuntime *findPdRuntime(uint32_t com_id, const std::string &if_name);
     void sendPdOnInterface(InterfaceRuntime &iface, PdRuntime &pd_runtime);
