@@ -3,10 +3,12 @@ add_executable(trdp-backend)
 target_sources(trdp-backend
     PRIVATE
         src/main.cpp
+        src/controllers/TrdpController.cc
 )
 
 target_include_directories(trdp-backend
     PRIVATE
+        ${PROJECT_SOURCE_DIR}/backend/include
         ${PROJECT_SOURCE_DIR}/trdp-core/include
 )
 
