@@ -1,6 +1,8 @@
 #include <drogon/drogon.h>
 #include <trdp/core.hpp>
 
+#include "controllers/TrdpController.h"
+
 int main() {
     trdp::TrdpEngine engine;
     engine.loadConfig("configs/example.xml", "localhost");
@@ -10,6 +12,8 @@ int main() {
         .setThreadNum(1)
         .setLogPath("./logs")
         .enableRunAsDaemon(false);
+
+    TrdpController::setEngine(&engine);
 
     LOG_INFO << "Starting TRDP backend (status: " << engine.status() << ")";
     engine.start();
