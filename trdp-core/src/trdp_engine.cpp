@@ -137,12 +137,91 @@ void TrdpEngine::stop() {
 std::vector<PdRuntime> TrdpEngine::getPdSnapshot() const { return pd_runtimes_; }
 
 void TrdpEngine::enablePd(uint32_t com_id, bool enable) {
+    std::lock_guard<std::mutex> lock(state_mtx_);
+
     if (PdRuntime *runtime = findPdRuntime(com_id, {})) {
         runtime->tx_enabled = enable;
     }
 }
 
-void TrdpEngine::setPdValues(uint32_t, const std::map<std::string, double> &) {}
+void TrdpEngine::setPdValues(uint32_t com_id, const std::map<std::string, double> &values) {
+    std::lock_guard<std::mutex> lock(state_mtx_);
+
+    PdRuntime *runtime = findPdRuntime(com_id, {});
+    if (runtime == nullptr || runtime->def == nullptr) {
+        return;
+    }
+
+    const Dataset *dataset = nullptr;
+    for (const auto &candidate : datasets_) {
+        if (candidate.id == runtime->def->dataset_id) {
+            dataset = &candidate;
+            break;
+        }
+    }
+
+    if (dataset == nullptr) {
+        return;
+    }
+
+    std::vector<uint8_t> payload;
+    for (const auto &element : dataset->elements) {
+        const auto valueIt = values.find(element.name);
+        const double value = valueIt != values.end() ? valueIt->second : 0.0;
+        const auto count = element.array_size == 0u ? 1u : element.array_size;
+
+        for (uint32_t idx = 0u; idx < count; ++idx) {
+            switch (element.type) {
+                case TRDP_BOOL8: {
+                    payload.push_back(value != 0.0 ? 1u : 0u);
+                    break;
+                }
+                case TRDP_UINT8: {
+                    payload.push_back(static_cast<uint8_t>(value));
+                    break;
+                }
+                case TRDP_INT8: {
+                    payload.push_back(static_cast<uint8_t>(static_cast<int8_t>(value)));
+                    break;
+                }
+                case TRDP_UINT16: {
+                    const uint16_t v = static_cast<uint16_t>(value);
+                    payload.push_back(static_cast<uint8_t>((v >> 8) & 0xFFu));
+                    payload.push_back(static_cast<uint8_t>(v & 0xFFu));
+                    break;
+                }
+                case TRDP_INT16: {
+                    const uint16_t v = static_cast<uint16_t>(static_cast<int16_t>(value));
+                    payload.push_back(static_cast<uint8_t>((v >> 8) & 0xFFu));
+                    payload.push_back(static_cast<uint8_t>(v & 0xFFu));
+                    break;
+                }
+                case TRDP_UINT32: {
+                    const uint32_t v = static_cast<uint32_t>(value);
+                    payload.push_back(static_cast<uint8_t>((v >> 24) & 0xFFu));
+                    payload.push_back(static_cast<uint8_t>((v >> 16) & 0xFFu));
+                    payload.push_back(static_cast<uint8_t>((v >> 8) & 0xFFu));
+                    payload.push_back(static_cast<uint8_t>(v & 0xFFu));
+                    break;
+                }
+                case TRDP_INT32: {
+                    const uint32_t v = static_cast<uint32_t>(static_cast<int32_t>(value));
+                    payload.push_back(static_cast<uint8_t>((v >> 24) & 0xFFu));
+                    payload.push_back(static_cast<uint8_t>((v >> 16) & 0xFFu));
+                    payload.push_back(static_cast<uint8_t>((v >> 8) & 0xFFu));
+                    payload.push_back(static_cast<uint8_t>(v & 0xFFu));
+                    break;
+                }
+                default: {
+                    // TODO: Handle additional data types
+                    break;
+                }
+            }
+        }
+    }
+
+    runtime->tx_payload = std::move(payload);
+}
 
 void TrdpEngine::pdSchedulerLoop() {
     while (running_) {
