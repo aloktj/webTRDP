@@ -58,6 +58,7 @@ private:
     void onPdReceive(const TRDP_PD_INFO_T *, const uint8_t *, uint32_t);
     InterfaceRuntime *findInterface(const std::string &name);
     PdRuntime *findPdRuntime(uint32_t com_id, const std::string &if_name);
+    void sendPdOnInterface(InterfaceRuntime &iface, PdRuntime &pd_runtime);
 };
 
 }  // namespace trdp
