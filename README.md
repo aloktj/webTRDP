@@ -1,5 +1,6 @@
+# webTRDP
 ---
-# webTRDP – Project Overview
+# Project Overview
 This project implements a **generic TRDP (Train Real-time Data Protocol) Simulator** with a modern **web UI**, built around the TCNopen TRDP stack.
 It consists of three major components:
 
