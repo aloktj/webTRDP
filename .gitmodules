@@ -1,3 +1,6 @@
 [submodule "third_party/TCNopen"]
 	path = third_party/TCNopen
 	url = git@github.com:aloktj/TCNopen.git
+[submodule "third_party/drogon"]
+	path = third_party/drogon
+	url = git@github.com:aloktj/drogon.git
