@@ -33,3 +33,6 @@ target_link_libraries(trdp-core
 )
 
 target_compile_features(trdp-core PUBLIC cxx_std_17)
+
+add_executable(trdp_config_dump tests/trdp_config_dump.cpp)
+target_link_libraries(trdp_config_dump PRIVATE trdp-core)
