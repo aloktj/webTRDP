@@ -47,6 +47,7 @@ public:
 
 private:
     std::vector<InterfaceRuntime> interfaces_;
+    std::vector<PdTelegramDef> pd_defs_;
     std::vector<PdRuntime> pd_runtimes_;
     std::vector<Dataset> datasets_;
     std::atomic<bool> running_;
