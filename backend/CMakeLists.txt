@@ -1,8 +1,14 @@
-add_executable(trdp-backend
-    src/main.cpp
+add_executable(trdp-backend)
+
+target_sources(trdp-backend
+    PRIVATE
+        src/main.cpp
 )
 
-target_include_directories(trdp-backend PRIVATE ${CMAKE_SOURCE_DIR}/trdp-core/include)
+target_include_directories(trdp-backend
+    PRIVATE
+        ${PROJECT_SOURCE_DIR}/trdp-core/include
+)
 
 target_link_libraries(trdp-backend
     PRIVATE
