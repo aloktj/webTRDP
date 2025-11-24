@@ -4,6 +4,7 @@ target_sources(trdp-backend
     PRIVATE
         src/main.cpp
         src/controllers/TrdpController.cc
+        src/json_utils.cpp
 )
 
 target_include_directories(trdp-backend
