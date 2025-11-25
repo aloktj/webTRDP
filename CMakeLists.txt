@@ -48,15 +48,51 @@ install(FILES README.md LICENSE DESTINATION ${CMAKE_INSTALL_DOCDIR})
 include(CTest)
 
 # Packaging configuration
-set(CPACK_GENERATOR "DEB")
-set(CPACK_PACKAGE_NAME "webtrdp")
-set(CPACK_PACKAGE_VENDOR "webTRDP Project")
-set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "TRDP Simulator backend and supporting components")
-set(CPACK_PACKAGE_CONTACT "webTRDP Maintainers <maintainers@example.com>")
+set(TRDP_SIMULATOR_NAME "trdp-simulator")
+set(TRDP_SIMULATOR_XML_SOURCE_DIR "${PROJECT_SOURCE_DIR}/backend/xml")
+set(TRDP_SIMULATOR_FRONTEND_BUILD_DIR "${PROJECT_SOURCE_DIR}/frontend/dist")
+
+install(DIRECTORY DESTINATION "/etc/${TRDP_SIMULATOR_NAME}")
+install(DIRECTORY DESTINATION "/var/lib/${TRDP_SIMULATOR_NAME}")
+
+if(EXISTS "${TRDP_SIMULATOR_XML_SOURCE_DIR}")
+    install(
+        DIRECTORY ${TRDP_SIMULATOR_XML_SOURCE_DIR}/
+        DESTINATION "/usr/share/${TRDP_SIMULATOR_NAME}/xml"
+        FILES_MATCHING
+        PATTERN "*.xml"
+    )
+endif()
+
+if(EXISTS "${TRDP_SIMULATOR_FRONTEND_BUILD_DIR}")
+    install(
+        DIRECTORY ${TRDP_SIMULATOR_FRONTEND_BUILD_DIR}/
+        DESTINATION "/usr/share/${TRDP_SIMULATOR_NAME}/frontend"
+    )
+endif()
+
+set(CPACK_PACKAGE_NAME "${TRDP_SIMULATOR_NAME}")
 set(CPACK_PACKAGE_VERSION ${PROJECT_VERSION})
-set(CPACK_DEBIAN_PACKAGE_MAINTAINER "webTRDP Maintainers")
-set(CPACK_DEBIAN_PACKAGE_SECTION "net")
-set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)
+set(CPACK_PACKAGE_VENDOR "TRDP Simulator Project")
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "TRDP Simulator backend and supporting components")
+set(CPACK_PACKAGE_CONTACT "TRDP Simulator Maintainers <maintainers@example.com>")
+set(CPACK_DEBIAN_PACKAGE_MAINTAINER "TRDP Simulator Maintainers")
 set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE")
+set(CPACK_SET_DESTDIR ON)
+
+if(NOT DEFINED CPACK_DEBIAN_PACKAGE_ARCHITECTURE)
+    find_program(DPKG_EXECUTABLE dpkg)
+    if(DPKG_EXECUTABLE)
+        execute_process(
+            COMMAND ${DPKG_EXECUTABLE} --print-architecture
+            OUTPUT_VARIABLE CPACK_DEBIAN_PACKAGE_ARCHITECTURE
+            OUTPUT_STRIP_TRAILING_WHITESPACE
+        )
+    endif()
+    if(NOT CPACK_DEBIAN_PACKAGE_ARCHITECTURE)
+        set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "all")
+    endif()
+endif()
 
 include(CPack)
+set(CPACK_GENERATOR "DEB")
