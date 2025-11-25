@@ -24,6 +24,11 @@ void mdCallback(void *, TRDP_APP_SESSION_T, const TRDP_MD_INFO_T *, UINT8 *, UIN
 namespace trdp {
 
 void TrdpEngine::loadConfig(const std::string &xml_path, const std::string &host_name) {
+    const bool shouldRestart = running_;
+    if (shouldRestart || !interfaces_.empty()) {
+        stop();
+    }
+
     TrdpConfigLoader loader;
     loader.loadFromXml(xml_path, host_name);
 
@@ -112,6 +117,10 @@ void TrdpEngine::loadConfig(const std::string &xml_path, const std::string &host
 
             iface->pd_list.push_back(&runtime);
         }
+    }
+
+    if (shouldRestart) {
+        start();
     }
 }
 

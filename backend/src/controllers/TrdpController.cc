@@ -17,6 +17,24 @@ void TrdpController::setEngine(trdp::TrdpEngine *engine) {
 
 namespace {
 
+void addCorsHeaders(const drogon::HttpResponsePtr &resp) {
+    resp->addHeader("Access-Control-Allow-Origin", "*");
+    resp->addHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS,PATCH");
+    resp->addHeader("Access-Control-Allow-Headers", "Content-Type");
+}
+
+bool handlePreflight(const drogon::HttpRequestPtr &req,
+                     std::function<void(const drogon::HttpResponsePtr &)> &callback) {
+    if (req->getMethod() == drogon::Options) {
+        auto resp = drogon::HttpResponse::newHttpResponse();
+        addCorsHeaders(resp);
+        callback(resp);
+        return true;
+    }
+
+    return false;
+}
+
 std::string directionToString(trdp::Direction direction) {
     switch (direction) {
     case trdp::Direction::Source:
@@ -38,11 +56,16 @@ Json::Int64 toMicros(const std::chrono::steady_clock::time_point &tp) {
 void TrdpController::getPdTelegrams(
     const drogon::HttpRequestPtr &req,
     std::function<void(const drogon::HttpResponsePtr &)> &&callback) const {
+    if (handlePreflight(req, callback)) {
+        return;
+    }
+
     if (engine_ == nullptr) {
         auto resp = drogon::HttpResponse::newHttpResponse();
         resp->setStatusCode(drogon::k500InternalServerError);
         resp->setBody(R"({"error":"TRDP engine is not initialized"})");
         resp->setContentTypeCode(drogon::CT_APPLICATION_JSON);
+        addCorsHeaders(resp);
         callback(resp);
         return;
     }
@@ -77,12 +100,17 @@ void TrdpController::getPdTelegrams(
     }
 
     auto resp = drogon::HttpResponse::newHttpJsonResponse(telegrams);
+    addCorsHeaders(resp);
     callback(resp);
 }
 
 void TrdpController::listConfigs(
     const drogon::HttpRequestPtr &req,
     std::function<void(const drogon::HttpResponsePtr &)> &&callback) const {
+    if (handlePreflight(req, callback)) {
+        return;
+    }
+
     Json::Value response(Json::objectValue);
     Json::Value files(Json::arrayValue);
 
@@ -108,18 +136,24 @@ void TrdpController::listConfigs(
     response["files"] = files;
 
     auto resp = drogon::HttpResponse::newHttpJsonResponse(response);
+    addCorsHeaders(resp);
     callback(resp);
 }
 
 void TrdpController::loadConfig(
     const drogon::HttpRequestPtr &req,
     std::function<void(const drogon::HttpResponsePtr &)> &&callback) const {
+    if (handlePreflight(req, callback)) {
+        return;
+    }
+
     const auto json = req->getJsonObject();
     if (!json || !(*json).isMember("path") || !(*json).isMember("host_name")) {
         auto resp = drogon::HttpResponse::newHttpResponse();
         resp->setStatusCode(drogon::k400BadRequest);
         resp->setBody(R"({"error":"Missing required fields: path, host_name"})");
         resp->setContentTypeCode(drogon::CT_APPLICATION_JSON);
+        addCorsHeaders(resp);
         callback(resp);
         return;
     }
@@ -129,6 +163,7 @@ void TrdpController::loadConfig(
         resp->setStatusCode(drogon::k500InternalServerError);
         resp->setBody(R"({"error":"TRDP engine is not initialized"})");
         resp->setContentTypeCode(drogon::CT_APPLICATION_JSON);
+        addCorsHeaders(resp);
         callback(resp);
         return;
     }
@@ -152,6 +187,7 @@ void TrdpController::loadConfig(
     response["host_name"] = hostName;
 
     auto resp = drogon::HttpResponse::newHttpJsonResponse(response);
+    addCorsHeaders(resp);
     callback(resp);
 }
 
@@ -159,12 +195,17 @@ void TrdpController::enablePd(
     const drogon::HttpRequestPtr &req,
     std::function<void(const drogon::HttpResponsePtr &)> &&callback,
     uint32_t com_id) const {
+    if (handlePreflight(req, callback)) {
+        return;
+    }
+
     const auto json = req->getJsonObject();
     if (!json || !(*json).isMember("enable")) {
         auto resp = drogon::HttpResponse::newHttpResponse();
         resp->setStatusCode(drogon::k400BadRequest);
         resp->setBody(R"({"error":"Missing required field: enable"})");
         resp->setContentTypeCode(drogon::CT_APPLICATION_JSON);
+        addCorsHeaders(resp);
         callback(resp);
         return;
     }
@@ -174,6 +215,7 @@ void TrdpController::enablePd(
         resp->setStatusCode(drogon::k500InternalServerError);
         resp->setBody(R"({"error":"TRDP engine is not initialized"})");
         resp->setContentTypeCode(drogon::CT_APPLICATION_JSON);
+        addCorsHeaders(resp);
         callback(resp);
         return;
     }
@@ -187,6 +229,7 @@ void TrdpController::enablePd(
     response["enabled"] = enable;
 
     auto resp = drogon::HttpResponse::newHttpJsonResponse(response);
+    addCorsHeaders(resp);
     callback(resp);
 }
 
@@ -194,12 +237,17 @@ void TrdpController::setPdValues(
     const drogon::HttpRequestPtr &req,
     std::function<void(const drogon::HttpResponsePtr &)> &&callback,
     uint32_t com_id) const {
+    if (handlePreflight(req, callback)) {
+        return;
+    }
+
     const auto json = req->getJsonObject();
     if (!json || !(*json).isMember("fields") || !(*json)["fields"].isArray()) {
         auto resp = drogon::HttpResponse::newHttpResponse();
         resp->setStatusCode(drogon::k400BadRequest);
         resp->setBody("{\"error\":\"Missing required field: fields (array)\"}");
         resp->setContentTypeCode(drogon::CT_APPLICATION_JSON);
+        addCorsHeaders(resp);
         callback(resp);
         return;
     }
@@ -209,6 +257,7 @@ void TrdpController::setPdValues(
         resp->setStatusCode(drogon::k500InternalServerError);
         resp->setBody("{\"error\":\"TRDP engine is not initialized\"}");
         resp->setContentTypeCode(drogon::CT_APPLICATION_JSON);
+        addCorsHeaders(resp);
         callback(resp);
         return;
     }
@@ -230,5 +279,6 @@ void TrdpController::setPdValues(
     response["updated_fields"] = static_cast<Json::UInt64>(values.size());
 
     auto resp = drogon::HttpResponse::newHttpJsonResponse(response);
+    addCorsHeaders(resp);
     callback(resp);
 }

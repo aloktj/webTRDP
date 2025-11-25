@@ -9,11 +9,11 @@ public:
     static void setEngine(trdp::TrdpEngine *engine);
 
     METHOD_LIST_BEGIN
-    ADD_METHOD_TO(TrdpController::getPdTelegrams, "/api/pd/telegrams", drogon::Get);
+    ADD_METHOD_TO(TrdpController::getPdTelegrams, "/api/pd/telegrams", drogon::Get, drogon::Options);
     ADD_METHOD_TO(TrdpController::listConfigs, "/api/configs", drogon::Get, drogon::Options);
     ADD_METHOD_TO(TrdpController::loadConfig, "/api/configs/load", drogon::Post, drogon::Options);
-    ADD_METHOD_TO(TrdpController::enablePd, "/api/pd/{com_id}/enable", drogon::Post);
-    ADD_METHOD_TO(TrdpController::setPdValues, "/api/pd/{com_id}/values", drogon::Patch);
+    ADD_METHOD_TO(TrdpController::enablePd, "/api/pd/{com_id}/enable", drogon::Post, drogon::Options);
+    ADD_METHOD_TO(TrdpController::setPdValues, "/api/pd/{com_id}/values", drogon::Patch, drogon::Options);
     METHOD_LIST_END
 
     void getPdTelegrams(const drogon::HttpRequestPtr &req,
