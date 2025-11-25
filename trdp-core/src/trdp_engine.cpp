@@ -152,14 +152,7 @@ void TrdpEngine::setPdValues(uint32_t com_id, const std::map<std::string, double
         return;
     }
 
-    const Dataset *dataset = nullptr;
-    for (const auto &candidate : datasets_) {
-        if (candidate.id == runtime->def->dataset_id) {
-            dataset = &candidate;
-            break;
-        }
-    }
-
+    const Dataset *dataset = findDataset(runtime->def->dataset_id);
     if (dataset == nullptr) {
         return;
     }
@@ -289,6 +282,103 @@ void TrdpEngine::onPdReceive(TRDP_APP_SESSION_T appHandle, const TRDP_PD_INFO_T 
     runtime->rx_count++;
 }
 
+std::vector<DecodedField> TrdpEngine::decodeLastRx(const PdRuntime &pd) const {
+    std::vector<DecodedField> decoded;
+
+    if (pd.def == nullptr) {
+        return decoded;
+    }
+
+    const Dataset *dataset = findDataset(pd.def->dataset_id);
+    if (dataset == nullptr) {
+        return decoded;
+    }
+
+    const auto &payload = pd.last_rx_payload;
+    size_t offset = 0u;
+
+    auto hasBytes = [&](size_t count) { return offset + count <= payload.size(); };
+
+    for (const auto &element : dataset->elements) {
+        const uint32_t count = element.array_size == 0u ? 1u : element.array_size;
+        DecodedField field {element.name, element.type, {}};
+        field.values.reserve(count);
+
+        for (uint32_t idx = 0u; idx < count; ++idx) {
+            switch (element.type) {
+                case TRDP_BOOL8:
+                case TRDP_UINT8: {
+                    if (!hasBytes(1u)) {
+                        return decoded;
+                    }
+                    field.values.push_back(static_cast<int64_t>(payload[offset]));
+                    offset += 1u;
+                    break;
+                }
+                case TRDP_INT8: {
+                    if (!hasBytes(1u)) {
+                        return decoded;
+                    }
+                    field.values.push_back(static_cast<int64_t>(static_cast<int8_t>(payload[offset])));
+                    offset += 1u;
+                    break;
+                }
+                case TRDP_UINT16: {
+                    if (!hasBytes(2u)) {
+                        return decoded;
+                    }
+                    const uint16_t value = static_cast<uint16_t>((static_cast<uint16_t>(payload[offset]) << 8u) |
+                                                                  static_cast<uint16_t>(payload[offset + 1u]));
+                    field.values.push_back(static_cast<int64_t>(value));
+                    offset += 2u;
+                    break;
+                }
+                case TRDP_INT16: {
+                    if (!hasBytes(2u)) {
+                        return decoded;
+                    }
+                    const int16_t value = static_cast<int16_t>((static_cast<uint16_t>(payload[offset]) << 8u) |
+                                                               static_cast<uint16_t>(payload[offset + 1u]));
+                    field.values.push_back(static_cast<int64_t>(value));
+                    offset += 2u;
+                    break;
+                }
+                case TRDP_UINT32: {
+                    if (!hasBytes(4u)) {
+                        return decoded;
+                    }
+                    const uint32_t value = (static_cast<uint32_t>(payload[offset]) << 24u) |
+                                           (static_cast<uint32_t>(payload[offset + 1u]) << 16u) |
+                                           (static_cast<uint32_t>(payload[offset + 2u]) << 8u) |
+                                           static_cast<uint32_t>(payload[offset + 3u]);
+                    field.values.push_back(static_cast<int64_t>(value));
+                    offset += 4u;
+                    break;
+                }
+                case TRDP_INT32: {
+                    if (!hasBytes(4u)) {
+                        return decoded;
+                    }
+                    const int32_t value = (static_cast<uint32_t>(payload[offset]) << 24u) |
+                                          (static_cast<uint32_t>(payload[offset + 1u]) << 16u) |
+                                          (static_cast<uint32_t>(payload[offset + 2u]) << 8u) |
+                                          static_cast<uint32_t>(payload[offset + 3u]);
+                    field.values.push_back(static_cast<int64_t>(value));
+                    offset += 4u;
+                    break;
+                }
+                default: {
+                    return decoded;
+                }
+            }
+        }
+
+        decoded.push_back(std::move(field));
+    }
+
+    return decoded;
+}
+
 void TrdpEngine::sendPdOnInterface(InterfaceRuntime &iface, PdRuntime &pd_runtime) {
     // TODO: Integrate TRDP PD send API
     (void)iface;
@@ -310,6 +400,16 @@ PdRuntime *TrdpEngine::findPdRuntime(uint32_t com_id, const std::string &if_name
             return &pd;
         }
     }
+    return nullptr;
+}
+
+const Dataset *TrdpEngine::findDataset(uint32_t id) const {
+    for (const auto &dataset : datasets_) {
+        if (dataset.id == id) {
+            return &dataset;
+        }
+    }
+
     return nullptr;
 }
 
