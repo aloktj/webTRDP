@@ -13,6 +13,12 @@ target_include_directories(trdp-backend
         ${PROJECT_SOURCE_DIR}/trdp-core/include
 )
 
+target_compile_definitions(trdp-backend
+    PRIVATE
+        TRDP_DEFAULT_XML_PATH="${PROJECT_SOURCE_DIR}/third_party/TCNopen/trdp/test/xml/example.xml"
+        TRDP_DEFAULT_HOST_NAME="localhost"
+)
+
 target_link_libraries(trdp-backend
     PRIVATE
         trdp-core
