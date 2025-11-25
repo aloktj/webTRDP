@@ -21,6 +21,11 @@ type PdTelegram = {
   avg_period_us: number;
 };
 
+type ConfigFile = {
+  name: string;
+  path: string;
+};
+
 function formatMicros(micros: number) {
   if (!micros) return '—';
   const ms = micros / 1000;
@@ -53,12 +58,22 @@ function App() {
   const [backendUrl, setBackendUrl] = useState('http://localhost:8080');
   const [configPath, setConfigPath] = useState('third_party/TCNopen/trdp/test/xml/example.xml');
   const [hostName, setHostName] = useState('localhost');
+  const [configDirectory, setConfigDirectory] = useState('');
+  const [configFiles, setConfigFiles] = useState<ConfigFile[]>([]);
   const [pdTelegrams, setPdTelegrams] = useState<PdTelegram[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isConfigScanLoading, setIsConfigScanLoading] = useState(false);
   const [error, setError] = useState<string>('');
   const [status, setStatus] = useState<string>('');
 
   const apiBase = useMemo(() => backendUrl.replace(/\/$/, ''), [backendUrl]);
+
+  const friendlyFetchError = (action: string, err: unknown) => {
+    if (err instanceof Error && err.message === 'Failed to fetch') {
+      return `Could not ${action} – the backend at ${apiBase} is unreachable. Is the server running and CORS allowed?`;
+    }
+    return err instanceof Error ? err.message : `Failed to ${action}`;
+  };
 
   const fetchTelegrams = async () => {
     setIsLoading(true);
@@ -73,9 +88,35 @@ function App() {
       setPdTelegrams(data);
       setStatus(`Loaded ${data.length} process data telegrams.`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load telegrams');
+      setError(friendlyFetchError('load telegrams', err));
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const fetchConfigOptions = async () => {
+    setIsConfigScanLoading(true);
+    setError('');
+    setStatus('');
+    try {
+      const resp = await fetch(`${apiBase}/api/configs`);
+      if (!resp.ok) {
+        const message = await resp.text();
+        throw new Error(message || `Request failed with status ${resp.status}`);
+      }
+      const data: { directory?: string; files?: ConfigFile[] } = await resp.json();
+      setConfigDirectory(data.directory ?? '');
+      setConfigFiles(data.files ?? []);
+      if ((data.files?.length ?? 0) > 0) {
+        setStatus(`Found ${data.files?.length} XML configuration${data.files?.length === 1 ? '' : 's'} in ${data.directory}.`);
+        if (!configPath && data.files?.[0]) {
+          setConfigPath(data.files[0].path);
+        }
+      }
+    } catch (err) {
+      setError(friendlyFetchError('scan for configs', err));
+    } finally {
+      setIsConfigScanLoading(false);
     }
   };
 
@@ -95,18 +136,20 @@ function App() {
         throw new Error(message || `Config load failed (${resp.status})`);
       }
 
-      setStatus('Configuration loaded. Refresh telegrams to see updates.');
+      const result = await resp.json();
+      setStatus(`Configuration loaded from ${result.path}. Refresh telegrams to see updates.`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load configuration');
+      setError(friendlyFetchError('load configuration', err));
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
+    fetchConfigOptions().catch(() => setError('Unable to scan for configs. Check the backend URL and try again.'));
     fetchTelegrams().catch(() => setError('Unable to reach backend. Check the URL and try again.'));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [apiBase]);
 
   return (
     <main className="app-shell">
@@ -145,10 +188,21 @@ function App() {
             <span>Config XML path</span>
             <input
               type="text"
+              list="config-options"
               value={configPath}
               onChange={(e) => setConfigPath(e.target.value)}
-              placeholder="third_party/TCNopen/trdp/test/xml/example.xml"
+              placeholder="/etc/webtrdp/configs/example.xml"
             />
+            <datalist id="config-options">
+              {configFiles.map((file) => (
+                <option key={file.path} value={file.path}>
+                  {file.name}
+                </option>
+              ))}
+            </datalist>
+            <p className="hint">
+              Detected XML configs from {configDirectory || 'the configured directory (set TRDP_CONFIG_DIR)'}.
+            </p>
           </label>
           <label className="field">
             <span>Host name</span>
@@ -157,6 +211,9 @@ function App() {
         </div>
 
         <div className="actions">
+          <button className="ghost" onClick={fetchConfigOptions} disabled={isConfigScanLoading}>
+            {isConfigScanLoading ? 'Scanning…' : 'Rescan configs'}
+          </button>
           <button onClick={loadConfig} disabled={isLoading}>
             {isLoading ? 'Loading…' : 'Load configuration'}
           </button>

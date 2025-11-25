@@ -1,10 +1,13 @@
 #include "controllers/TrdpController.h"
 
 #include <chrono>
+#include <filesystem>
 #include <drogon/HttpResponse.h>
 #include <json/json.h>
 #include <map>
 #include <string>
+
+#include "config_paths.hpp"
 
 trdp::TrdpEngine *TrdpController::engine_ = nullptr;
 
@@ -77,6 +80,37 @@ void TrdpController::getPdTelegrams(
     callback(resp);
 }
 
+void TrdpController::listConfigs(
+    const drogon::HttpRequestPtr &req,
+    std::function<void(const drogon::HttpResponsePtr &)> &&callback) const {
+    Json::Value response(Json::objectValue);
+    Json::Value files(Json::arrayValue);
+
+    const std::string configDir = resolveConfigDirectory();
+    response["directory"] = configDir;
+
+    std::error_code ec;
+    if (!configDir.empty() && std::filesystem::exists(configDir, ec)) {
+        for (const auto &entry : std::filesystem::directory_iterator(configDir, ec)) {
+            if (!entry.is_regular_file(ec) || entry.path().extension() != ".xml") {
+                continue;
+            }
+
+            Json::Value file(Json::objectValue);
+            file["name"] = entry.path().filename().string();
+            file["path"] = entry.path().string();
+            files.append(file);
+        }
+    } else if (!configDir.empty()) {
+        response["warning"] = "Config directory is configured but does not exist.";
+    }
+
+    response["files"] = files;
+
+    auto resp = drogon::HttpResponse::newHttpJsonResponse(response);
+    callback(resp);
+}
+
 void TrdpController::loadConfig(
     const drogon::HttpRequestPtr &req,
     std::function<void(const drogon::HttpResponsePtr &)> &&callback) const {
@@ -101,11 +135,20 @@ void TrdpController::loadConfig(
 
     const auto &path = (*json)["path"].asString();
     const auto &hostName = (*json)["host_name"].asString();
-    engine_->loadConfig(path, hostName);
+    std::filesystem::path resolvedPath {path};
+
+    if (resolvedPath.is_relative()) {
+        const std::string configDir = resolveConfigDirectory();
+        if (!configDir.empty()) {
+            resolvedPath = std::filesystem::path(configDir) / resolvedPath;
+        }
+    }
+
+    engine_->loadConfig(resolvedPath.string(), hostName);
 
     Json::Value response;
     response["status"] = "config loaded";
-    response["path"] = path;
+    response["path"] = resolvedPath.string();
     response["host_name"] = hostName;
 
     auto resp = drogon::HttpResponse::newHttpJsonResponse(response);
