@@ -1,0 +1,9 @@
+#!/bin/sh
+set -e
+
+# Ensure the active XML symlink points to the default config if it does not exist
+if [ ! -e /etc/trdp-simulator/active.xml ]; then
+    ln -s /var/lib/trdp-simulator/configs/default.xml /etc/trdp-simulator/active.xml || true
+fi
+
+exit 0

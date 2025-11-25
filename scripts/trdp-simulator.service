@@ -1,0 +1,11 @@
+[Unit]
+Description=TRDP Simulator Backend
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/trdp-backend
+WorkingDirectory=/var/lib/trdp-simulator
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
