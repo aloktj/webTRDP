@@ -83,6 +83,11 @@ if(EXISTS "${TRDP_SIMULATOR_FRONTEND_BUILD_DIR}")
     )
 endif()
 
+install(
+    FILES scripts/trdp-simulator.service
+    DESTINATION lib/systemd/system
+)
+
 set(CPACK_PACKAGE_NAME "${TRDP_SIMULATOR_NAME}")
 set(CPACK_PACKAGE_VERSION ${PROJECT_VERSION})
 set(CPACK_PACKAGE_VENDOR "TRDP Simulator Project")
