@@ -40,7 +40,7 @@ target_link_libraries(trdp-backend
 
 target_compile_features(trdp-backend PRIVATE cxx_std_17)
 
-install(TARGETS trdp-backend RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+install(TARGETS trdp-backend RUNTIME DESTINATION bin)
 
 install(DIRECTORY DESTINATION ${CMAKE_INSTALL_SYSCONFDIR}/webtrdp)
 install(DIRECTORY DESTINATION ${CMAKE_INSTALL_SYSCONFDIR}/webtrdp/configs)
