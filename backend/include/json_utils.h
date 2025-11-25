@@ -6,7 +6,7 @@
 
 namespace trdp {
 
-Json::Value pdRuntimeToJson(const PdRuntime &pd);
+Json::Value pdRuntimeToJson(const PdRuntime &pd, const TrdpEngine &engine);
 
 }  // namespace trdp
 

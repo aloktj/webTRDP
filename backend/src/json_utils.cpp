@@ -33,9 +33,38 @@ std::string payloadToHex(const std::vector<uint8_t> &payload) {
     return stream.str();
 }
 
+std::string typeToString(uint32_t type) {
+    switch (type) {
+        case TRDP_BOOL8:
+            return "BOOL";
+        case TRDP_UINT8:
+            return "UINT8";
+        case TRDP_INT8:
+            return "INT8";
+        case TRDP_UINT16:
+            return "UINT16";
+        case TRDP_INT16:
+            return "INT16";
+        case TRDP_UINT32:
+            return "UINT32";
+        case TRDP_INT32:
+            return "INT32";
+        default:
+            return "UNKNOWN";
+    }
+}
+
+Json::Value valueToJson(uint32_t type, int64_t value) {
+    if (type == TRDP_BOOL8) {
+        return value != 0;
+    }
+
+    return Json::Int64(value);
+}
+
 }  // namespace
 
-Json::Value pdRuntimeToJson(const PdRuntime &pd) {
+Json::Value pdRuntimeToJson(const PdRuntime &pd, const TrdpEngine &engine) {
     Json::Value json(Json::objectValue);
 
     if (pd.def != nullptr) {
@@ -66,6 +95,29 @@ Json::Value pdRuntimeToJson(const PdRuntime &pd) {
     last_rx["timestamp"] = pd.last_rx_valid ? toMillis(pd.last_rx_time) : Json::Int64(0);
     last_rx["valid"] = pd.last_rx_valid;
     last_rx["raw_hex"] = payloadToHex(pd.last_rx_payload);
+
+    Json::Value decoded_fields(Json::arrayValue);
+    for (const auto &field : engine.decodeLastRx(pd)) {
+        Json::Value field_json(Json::objectValue);
+        field_json["name"] = field.name;
+        field_json["type"] = typeToString(field.type);
+
+        if (field.values.empty()) {
+            field_json["value"] = Json::nullValue;
+        } else if (field.values.size() == 1u) {
+            field_json["value"] = valueToJson(field.type, field.values.front());
+        } else {
+            Json::Value arr(Json::arrayValue);
+            for (const auto value : field.values) {
+                arr.append(valueToJson(field.type, value));
+            }
+            field_json["value"] = arr;
+        }
+
+        decoded_fields.append(field_json);
+    }
+
+    last_rx["decoded_fields"] = decoded_fields;
     json["last_rx"] = last_rx;
 
     return json;
