@@ -51,6 +51,7 @@ public:
     void enablePd(uint32_t com_id, bool enable);
     void setPdValues(uint32_t com_id, const std::map<std::string, double> &values);
     std::vector<DecodedField> decodeLastRx(const PdRuntime &pd) const;
+    void onPdReceive(TRDP_APP_SESSION_T, const TRDP_PD_INFO_T *, const uint8_t *, uint32_t);
 
 private:
     std::vector<InterfaceRuntime> interfaces_;
@@ -62,7 +63,6 @@ private:
     mutable std::mutex state_mtx_;
 
     void pdSchedulerLoop();
-    void onPdReceive(TRDP_APP_SESSION_T, const TRDP_PD_INFO_T *, const uint8_t *, uint32_t);
     InterfaceRuntime *findInterface(const std::string &name);
     PdRuntime *findPdRuntime(uint32_t com_id, const std::string &if_name);
     const Dataset *findDataset(uint32_t id) const;

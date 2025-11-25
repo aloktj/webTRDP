@@ -155,7 +155,7 @@ void TrdpController::setPdValues(
     if (!json || !(*json).isMember("fields") || !(*json)["fields"].isArray()) {
         auto resp = drogon::HttpResponse::newHttpResponse();
         resp->setStatusCode(drogon::k400BadRequest);
-        resp->setBody(R"({"error":"Missing required field: fields (array)"})");
+        resp->setBody("{\"error\":\"Missing required field: fields (array)\"}");
         resp->setContentTypeCode(drogon::CT_APPLICATION_JSON);
         callback(resp);
         return;
@@ -164,7 +164,7 @@ void TrdpController::setPdValues(
     if (engine_ == nullptr) {
         auto resp = drogon::HttpResponse::newHttpResponse();
         resp->setStatusCode(drogon::k500InternalServerError);
-        resp->setBody(R"({"error":"TRDP engine is not initialized"})");
+        resp->setBody("{\"error\":\"TRDP engine is not initialized\"}");
         resp->setContentTypeCode(drogon::CT_APPLICATION_JSON);
         callback(resp);
         return;

@@ -16,7 +16,7 @@ int main() {
         .addListener("0.0.0.0", 8080)
         .setThreadNum(1)
         .setLogPath("./logs")
-        .enableRunAsDaemon(false);
+        .enableRunAsDaemon();
 
     TrdpController::setEngine(g_trdpEngine.get());
 
