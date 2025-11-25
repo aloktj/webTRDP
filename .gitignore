@@ -1,0 +1,11 @@
+# Build outputs
+build/
+frontend/dist/
+
+# Node dependencies
+frontend/node_modules/
+
+# Editor files
+.DS_Store
+.idea/
+.vscode/
