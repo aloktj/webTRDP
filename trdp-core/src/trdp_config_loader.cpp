@@ -71,16 +71,16 @@ Direction determineDirection(const TRDP_EXCHG_PAR_T &exchange, const std::string
     bool isDestination = false;
 
     for (uint32_t idx = 0u; idx < exchange.srcCnt; ++idx) {
-        if (exchange.pSrc[idx].pUriHost1 != nullptr && host_name == exchange.pSrc[idx].pUriHost1) {
+        if (exchange.pSrc[idx].pUriHost1 != nullptr && host_name == std::string(*exchange.pSrc[idx].pUriHost1)) {
             isSource = true;
         }
-        if (exchange.pSrc[idx].pUriHost2 != nullptr && host_name == exchange.pSrc[idx].pUriHost2) {
+        if (exchange.pSrc[idx].pUriHost2 != nullptr && host_name == std::string(*exchange.pSrc[idx].pUriHost2)) {
             isSource = true;
         }
     }
 
     for (uint32_t idx = 0u; idx < exchange.destCnt; ++idx) {
-        if (exchange.pDest[idx].pUriHost != nullptr && host_name == exchange.pDest[idx].pUriHost) {
+        if (exchange.pDest[idx].pUriHost != nullptr && host_name == std::string(*exchange.pDest[idx].pUriHost)) {
             isDestination = true;
         }
     }
