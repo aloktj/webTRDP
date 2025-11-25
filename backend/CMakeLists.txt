@@ -4,6 +4,7 @@ target_sources(trdp-backend
     PRIVATE
         src/main.cpp
         src/controllers/TrdpController.cc
+        src/config_paths.cpp
         src/json_utils.cpp
 )
 
@@ -17,6 +18,7 @@ target_compile_definitions(trdp-backend
     PRIVATE
         TRDP_DEFAULT_XML_PATH="${PROJECT_SOURCE_DIR}/third_party/TCNopen/trdp/test/xml/example.xml"
         TRDP_DEFAULT_HOST_NAME="localhost"
+        TRDP_DEFAULT_CONFIG_DIR="/etc/webtrdp/configs"
 )
 
 target_link_libraries(trdp-backend
