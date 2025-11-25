@@ -1,0 +1,14 @@
+[Unit]
+Description=webTRDP Backend Service
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=@WEBTRDP_STATE_DIR@
+ExecStart=@CMAKE_INSTALL_FULL_BINDIR@/trdp-backend
+EnvironmentFile=-@CMAKE_INSTALL_FULL_SYSCONFDIR@/default/webtrdp
+Restart=on-failure
+RestartSec=2s
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,18 @@
+# Environment configuration for the webTRDP backend
+# Uncomment and adjust values as needed before enabling the service.
+
+# Path to the TRDP XML configuration file
+# TRDP_XML_PATH=@WEBTRDP_DEFAULT_XML_PATH@
+
+# Host name used to select the correct interface configuration in the XML
+# TRDP_HOST_NAME=@WEBTRDP_DEFAULT_HOST_NAME@
+
+# Listening interface and port for the Drogon HTTP server
+# TRDP_LISTEN_ADDRESS=0.0.0.0
+# TRDP_LISTEN_PORT=8080
+
+# Whether to run Drogon as a daemon (systemd handles process management, so this is usually left disabled)
+# TRDP_RUN_AS_DAEMON=0
+
+# Directory containing additional TRDP configuration artifacts
+# TRDP_CONFIG_DIR=@WEBTRDP_DEFAULT_CONFIG_DIR@
