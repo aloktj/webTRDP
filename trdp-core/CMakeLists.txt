@@ -9,6 +9,10 @@ set(TRDP_INCLUDE_DIR "" CACHE PATH "Path to the TRDP include directory (tau_xml.
 
 set(_tcnopen_dir "${PROJECT_SOURCE_DIR}/third_party/TCNopen/trdp")
 if(TRDP_USE_SUBMODULE AND EXISTS "${_tcnopen_dir}/CMakeLists.txt")
+    # Build the bundled TRDP with optional TAU helpers (e.g., XML parsing) folded
+    # into libtrdp so downstream targets like trdp-core can resolve symbols such
+    # as tau_prepareXmlDoc.
+    set(TRDP_FULL_BUILD ON CACHE BOOL "Bundle optional TAU helpers directly into libtrdp" FORCE)
     add_subdirectory(${_tcnopen_dir} ${CMAKE_BINARY_DIR}/tcnopen)
     set(TRDP_LIBRARY TRDP::trdp)
 else()
