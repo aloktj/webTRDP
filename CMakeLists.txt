@@ -1,9 +1,18 @@
 cmake_minimum_required(VERSION 3.16)
-project(webTRDP LANGUAGES CXX)
+project(webTRDP VERSION 0.1.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
+include(GNUInstallDirs)
+
+if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+    set(CMAKE_INSTALL_PREFIX "/usr" CACHE PATH "Install prefix" FORCE)
+endif()
+
+set(CMAKE_INSTALL_SYSCONFDIR "/etc" CACHE PATH "System configuration directory" FORCE)
+set(CMAKE_INSTALL_LOCALSTATEDIR "/var" CACHE PATH "Local state directory" FORCE)
 
 # Third-party dependencies
 set(_drogon_cmake "${CMAKE_CURRENT_SOURCE_DIR}/third_party/drogon/CMakeLists.txt")
@@ -33,5 +42,21 @@ endif()
 add_subdirectory(trdp-core)
 add_subdirectory(backend)
 
+install(FILES README.md LICENSE DESTINATION ${CMAKE_INSTALL_DOCDIR})
+
 # Enable testing hooks for future phases
 include(CTest)
+
+# Packaging configuration
+set(CPACK_GENERATOR "DEB")
+set(CPACK_PACKAGE_NAME "webtrdp")
+set(CPACK_PACKAGE_VENDOR "webTRDP Project")
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "TRDP Simulator backend and supporting components")
+set(CPACK_PACKAGE_CONTACT "webTRDP Maintainers <maintainers@example.com>")
+set(CPACK_PACKAGE_VERSION ${PROJECT_VERSION})
+set(CPACK_DEBIAN_PACKAGE_MAINTAINER "webTRDP Maintainers")
+set(CPACK_DEBIAN_PACKAGE_SECTION "net")
+set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)
+set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE")
+
+include(CPack)
