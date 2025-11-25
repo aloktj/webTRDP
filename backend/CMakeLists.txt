@@ -16,7 +16,7 @@ target_include_directories(trdp-backend
 target_link_libraries(trdp-backend
     PRIVATE
         trdp-core
-        Drogon::Drogon
+        drogon
 )
 
 target_compile_features(trdp-backend PRIVATE cxx_std_17)
